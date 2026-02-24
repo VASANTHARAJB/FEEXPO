@@ -1,0 +1,30 @@
+path: 'C:/Users/KiTE/Desktop/fexpoo/PY26057/FruitProject' 
+
+# Use your actual folder names here
+train: training/images
+val: test/images    # We tell YOLO to use your 'test' folder for validation
+test: test/images
+
+names:
+  0: Fresh_Apple
+  1: Fresh_Banana
+  2: Fresh_Beans
+  3: Fresh_Beetroot
+  4: Fresh_Cabbage
+  5: Fresh_Carrot
+  6: Fresh_Cocos
+  7: Fresh_Cucumber
+  8: Fresh_Eggplant
+  9: Fresh_Grapes
+  10: Fresh_Guava
+  11: Fresh_Lemon
+  12: Fresh_Mango
+  13: Fresh_Onion
+  14: Fresh_Orange
+  15: Fresh_Papaya
+  16: Fresh_Pineapple
+  17: Fresh_Pomegranate
+  18: Fresh_Potato
+  19: Fresh_Tomato
+  20: Fresh_Watermelon
+  21: Fresh_Zucchini

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin - Farmer Verification</title>
+</head>
+<body>
+
+<h1>Admin Panel</h1>
+
+<table border="1">
+<tr>
+    <th>Name</th>
+    <th>Mobile</th>
+    <th>Survey</th>
+    <th>Status</th>
+    <th>Action</th>
+</tr>
+
+{% for farmer in farmers %}
+<tr>
+    <td>{{ farmer.name }}</td>
+    <td>{{ farmer.mobile }}</td>
+    <td>{{ farmer.survey }}</td>
+    <td>{{ farmer.status }}</td>
+    <td>
+        {% if farmer.status == "Pending" %}
+        <a href="/approve/{{ loop.index0 }}">Approve</a>
+        {% else %}
+        Verified
+        {% endif %}
+    </td>
+</tr>
+{% endfor %}
+
+</table>
+
+</body>
+</html>

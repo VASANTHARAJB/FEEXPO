@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FARMIO</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="page1-bg">
+
+    <div class="center-box">
+
+        <img src="{{ url_for('static', filename='A_logo_for_WEXPO_2026.png') }}" class="logo">
+
+        <h1 class="app-name">FARMIO</h1>
+
+        <p class="tagline">{{ tagline }}</p>
+
+        <a href="/language" class="start-btn">{{ button_text }}</a>
+
+    </div>
+
+</body>
+</html>

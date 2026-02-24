@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="form-card">
+    <h1 class="app-title">FARMIO</h1>
+    <p class="tagline">Connecting Farmers Directly to Consumers</p>
+
+    <!-- CUSTOMER FORM -->
+    <form id="customerForm">
+        <label for="mobile">Mobile Number</label>
+        <input type="text" name="mobile" class="form-input" placeholder="Enter Mobile" required>
+
+        <label for="email">Email</label>
+        <input type="email" name="email" class="form-input" placeholder="Enter Email" required>
+
+        <button type="submit" class="form-btn">Send OTP</button>
+    </form>
+
+    <!-- OTP SECTION - hidden initially -->
+    <div id="otpSection" style="display:none; margin-top:20px;">
+        <label for="otpInput">Enter OTP</label>
+        <input type="text" id="otpInput" class="form-input" placeholder="Enter OTP">
+
+        <button id="verifyOtpBtn" class="form-btn">Verify OTP</button>
+    </div>
+
+    <!-- Inline Message -->
+    <div id="message" class="success-msg" style="display:block; text-align:center; margin-top:15px;"></div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const customerForm = document.getElementById("customerForm");
+    const otpSection = document.getElementById("otpSection");
+    const message = document.getElementById("message");
+    const otpInput = document.getElementById("otpInput");
+    const verifyOtpBtn = document.getElementById("verifyOtpBtn");
+
+    // SEND OTP
+    customerForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        message.innerText = "Sending OTP...";
+
+        const formData = new FormData(customerForm);
+        const response = await fetch("/send_customer_otp", { method:"POST", body:formData });
+        const result = await response.json();
+
+        if(result.status === "ok"){
+            otpSection.style.display = "block";   // SHOW OTP box
+            message.innerText = "OTP sent successfully!";
+        } else {
+            message.innerText = "Failed to send OTP!";
+        }
+    });
+
+    // VERIFY OTP
+    verifyOtpBtn.addEventListener("click", async () => {
+    const otp = otpInput.value.trim();
+
+    const response = await fetch("/verify_customer_otp", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({otp})
+    });
+
+    const result = await response.json();
+    message.innerText = result.message;
+
+    // REDIRECT after success
+    if(result.status === "ok"){
+        window.location.href = result.redirect;
+    }
+});
+
+
+        
+});
+</script>
+</body>
+</html>

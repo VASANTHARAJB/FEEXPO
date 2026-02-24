@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fruit Quality Check</title>
+</head>
+<body>
+
+<h2>Upload Fruit Image</h2>
+
+<form action="/predict" method="POST" enctype="multipart/form-data">
+    <input type="file" name="image" required>
+    <button type="submit">Check Quality</button>
+</form>
+
+</body>
+</html>

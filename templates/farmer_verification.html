@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Farmer Verification</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        function toggleLeaseUpload() {
+            var landType = document.getElementById("land_type").value;
+            var leaseDiv = document.getElementById("lease_upload_section");
+
+            if (landType === "lease") {
+                leaseDiv.style.display = "block";
+            } else {
+                leaseDiv.style.display = "none";
+            }
+        }
+    </script>
+</head>
+<body>
+
+<div class="form-card">
+    <h2 class="app-title">Farmer Verification</h2>
+
+    <form method="POST" action="/submit_farmer_verification" enctype="multipart/form-data">
+
+        <h3>Identity Verification</h3>
+        <label>Aadhaar Upload:</label>
+        <input type="file" name="aadhaar_file" required><br><br>
+
+        <h3>Land Details</h3>
+
+        <label>Land Type:</label>
+        <select name="land_type" id="land_type" class="form-input" onchange="toggleLeaseUpload()" required>
+            <option value="">Select Land Type</option>
+            <option value="owner">Land Owner</option>
+            <option value="lease">Lease / Tenant Farmer</option>
+        </select><br><br>
+
+        <label>Survey Number:</label>
+        <input type="text" name="survey_no" required><br>
+
+        <label>Patta Number:</label>
+        <input type="text" name="patta_no" required><br>
+
+        <label>Patta Upload:</label>
+        <input type="file" name="patta_file" required><br><br>
+
+        <!-- Lease Upload Section -->
+        <div id="lease_upload_section" style="display:none;">
+            <label>Lease Agreement Upload:</label>
+            <input type="file" name="lease_file"><br><br>
+        </div>
+
+        <h3>Activity Verification</h3>
+        <label>Field Photo:</label>
+        <input type="file" name="field_photo" required><br>
+
+        <label>Latitude:</label>
+        <input type="text" name="latitude" required><br>
+
+        <label>Longitude:</label>
+        <input type="text" name="longitude" required><br><br>
+
+        <button type="submit">Submit Verification</button>
+
+    </form>
+</div>
+
+</body>
+</html>

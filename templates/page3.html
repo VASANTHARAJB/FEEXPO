@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FARMIO</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="page3-bg">
+
+<div class="top-section">
+    <h1 class="app-name">FARMIO</h1>
+    <h2>{{ tagline }}</h2>
+</div>
+
+<div class="choice-container">
+
+    <a href="/farmer_login" class="choice-card">
+        <img src="{{ url_for('static', filename='farmer1.png') }}" class="choice-img">
+        <h3>{{ farmer }}</h3>
+    </a>
+
+    <a href="/customer_login" class="choice-card">
+        <img src="{{ url_for('static', filename='customer1.png') }}" class="choice-img">
+        <h3>{{ customer }}</h3>
+    </a>
+
+</div>
+
+</body>
+</html>

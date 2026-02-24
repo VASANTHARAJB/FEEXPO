@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Customer Dashboard</title>
+</head>
+
+<body style="background-image:url('/static/bg.jpg'); background-size:cover;">
+
+<h2>Upload Fruit Image</h2>
+
+<form method="POST" enctype="multipart/form-data">
+    <input type="file" name="image" required>
+    <button type="submit">Check Quality</button>
+</form>
+
+{% if uploaded_img %}
+    <h3>Original Image:</h3>
+    <img src="{{ uploaded_img }}" width="300">
+{% endif %}
+
+{% if result_img %}
+    <h3>Detected Image:</h3>
+    <img src="{{ result_img }}" width="300">
+{% endif %}
+
+{% if score %}
+    <h3>Confidence Score: {{ score }}%</h3>
+{% endif %}
+
+</body>
+</html>

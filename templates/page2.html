@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Select Language</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="page2-bg">
+
+<h2>Select Your Language</h2>
+
+<form method="POST" action="/set_language">
+
+<div class="language-grid">
+
+    <button name="language" value="en" class="lang-box">English</button>
+    <button name="language" value="ta" class="lang-box">Tamil</button>
+    <button name="language" value="ml" class="lang-box">Malayalam</button>
+    <button name="language" value="te" class="lang-box">Telugu</button>
+    <button name="language" value="kn" class="lang-box">Kannada</button>
+    <button name="language" value="bn" class="lang-box">Bengali</button>
+    <button name="language" value="gu" class="lang-box">Gujarati</button>
+    <button name="language" value="pa" class="lang-box">Punjabi</button>
+    <button name="language" value="ur" class="lang-box">Urdu</button>
+    <button name="language" value="bho" class="lang-box">Bhojpuri</button>
+    <button name="language" value="as" class="lang-box">Assamese</button>
+    <button name="language" value="or" class="lang-box">Odia</button>
+    <button name="language" value="mr" class="lang-box">Marathi</button>
+    <button name="language" value="hi" class="lang-box">Hindi</button>
+
+</div>
+
+</form>
+
+</body>
+</html>
