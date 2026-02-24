@@ -80,6 +80,41 @@ document.addEventListener("DOMContentLoaded", function() {
 
         
 });
+function checkDeliveryZone() {
+    if (navigator.geolocation) {
+        // Get the Consumer's current Live GPS
+        navigator.geolocation.getCurrentPosition(function(position) {
+            const coords = {
+                lat: position.coords.latitude,
+                lon: position.coords.longitude
+            };
+
+            // Send to our Flask backend route
+            fetch('/check_nearby_farmers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(coords)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const display = document.getElementById('green-signal-display');
+                if (data.nearby_count > 0) {
+                    display.innerHTML = `<div style="padding:15px; background:#d4edda; color:#155724; border-radius:10px;">
+                        <strong>✅ Green Signal!</strong> We found ${data.nearby_count} farmers near you. 
+                        Free delivery is active!
+                    </div>`;
+                } else {
+                    display.innerHTML = `<div style="padding:15px; background:#f8d7da; color:#721c24; border-radius:10px;">
+                        <strong>📍 Outside Zone.</strong> No verified farmers within 5km. 
+                        Standard delivery rates apply.
+                    </div>`;
+                }
+            });
+        });
+    } else {
+        alert("Geolocation is not supported by this browser.");
+    }
+}
 </script>
 </body>
 </html>
