@@ -14,6 +14,33 @@
                 leaseDiv.style.display = "none";
             }
         }
+
+        // --- NEW HACKATHON GPS LOGIC ---
+        function getLiveLocation() {
+            var status = document.getElementById("location-status");
+            var latInput = document.getElementsByName("latitude")[0];
+            var lonInput = document.getElementsByName("longitude")[0];
+
+            status.innerHTML = "Locating via GPS... Please wait.";
+            status.style.color = "orange";
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    // Auto-fill the inputs
+                    latInput.value = position.coords.latitude.toFixed(6);
+                    lonInput.value = position.coords.longitude.toFixed(6);
+                    
+                    status.innerHTML = "✅ Location Locked! You are ready to sell to local customers.";
+                    status.style.color = "green";
+                }, function(error) {
+                    status.innerHTML = "❌ Please allow location access in your browser.";
+                    status.style.color = "red";
+                });
+            } else {
+                status.innerHTML = "Geolocation is not supported by your browser.";
+                status.style.color = "red";
+            }
+        }
     </script>
 </head>
 <body>
@@ -45,7 +72,6 @@
         <label>Patta Upload:</label>
         <input type="file" name="patta_file" required><br><br>
 
-        <!-- Lease Upload Section -->
         <div id="lease_upload_section" style="display:none;">
             <label>Lease Agreement Upload:</label>
             <input type="file" name="lease_file"><br><br>
@@ -53,15 +79,25 @@
 
         <h3>Activity Verification</h3>
         <label>Field Photo:</label>
-        <input type="file" name="field_photo" required><br>
+        <input type="file" name="field_photo" required><br><br>
+
+        <hr>
+        <h3 style="color: #28a745;">📍 Live Location Sync</h3>
+        <p style="font-size: 12px; color: #555;">Required to connect you with nearby customers for fast delivery.</p>
+        
+        <button type="button" onclick="getLiveLocation()" style="background: #28a745; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-bottom: 10px;">
+            Get My Live Location
+        </button>
+        <p id="location-status" style="font-weight: bold; margin-bottom: 15px;"></p>
 
         <label>Latitude:</label>
-        <input type="text" name="latitude" required><br>
+        <input type="text" name="latitude" readonly style="background: #e9ecef;" required><br>
 
         <label>Longitude:</label>
-        <input type="text" name="longitude" required><br><br>
+        <input type="text" name="longitude" readonly style="background: #e9ecef;" required><br><br>
+        <hr>
 
-        <button type="submit">Submit Verification</button>
+        <button type="submit" style="margin-top: 15px;">Submit Verification</button>
 
     </form>
 </div>

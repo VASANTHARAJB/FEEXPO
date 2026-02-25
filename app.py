@@ -3,6 +3,7 @@ import re
 import cv2
 import numpy as np
 import requests
+import random
 import mysql.connector
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify
 from math import radians, cos, sin, asin, sqrt
@@ -16,22 +17,19 @@ from ultralytics import YOLO
 app = Flask(__name__)
 app.secret_key = "farmio_secret_key"
 
-# Path Setup - Using relative paths for better portability
+# Path Setup
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-# Tesseract & YOLO Setup
-# Note: Ensure Tesseract is installed at this path on the laptop
+# Tesseract Setup
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
-# Use the model file found in your project root
+# YOLO Setup
 try:
     cv_model = YOLO("yolo11n.pt") 
 except Exception as e:
     print(f"Error loading YOLO model: {e}")
-
-API_KEY = "215a66be-fcc4-11f0-a6b2-0200cd936042"
 
 # ----------------------------
 # DATABASE CONNECTION
@@ -47,7 +45,6 @@ def get_db_connection():
 # ----------------------------
 # HELPER FUNCTIONS
 # ----------------------------
-
 def translate_text(text):
     lang = session.get("lang", "en")
     if lang == "en":
@@ -68,54 +65,28 @@ def haversine(lon1, lat1, lon2, lat2):
     return c * r
 
 def analyze_hsv_freshness(image_path):
-    """Step 6 & 7: Analyzes Hue, Saturation, and Value for browning/fading"""
+    """Analyzes Hue, Saturation, and Value for browning/fading"""
     img = cv2.imread(image_path)
     if img is None:
         return "Unknown", 0
     
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    avg_h = np.mean(hsv[:,:,0]) # Hue
-    avg_s = np.mean(hsv[:,:,1]) # Saturation
+    avg_h = np.mean(hsv[:,:,0])
+    avg_s = np.mean(hsv[:,:,1])
     
-    # Simple threshold: Low hue/saturation often indicates browning or decay
     if avg_h < 25 and avg_s < 120:
         return "Stale/Browning Detected", int(avg_s/2.55)
     return "Fresh Color Profile", int(avg_s/2.55)
 
 # ----------------------------
-# AUTHENTICATION (2FACTOR)
+# HACKATHON DUMMY OTP LOGIC
 # ----------------------------
-
-def send_otp_2factor(mobile):
-    url = f"https://2factor.in/API/V1/{API_KEY}/SMS/{mobile}/AUTOGEN"
-    try:
-        response = requests.get(url)
-        data = response.json()
-        if data['Status'] == 'Success':
-            session['session_id'] = data['Details']
-            return True
-        return False
-    except Exception:
-        return False
-
-def verify_otp_2factor(otp):
-    session_id = session.get('session_id')
-    if not session_id:
-        return False, "Session expired."
-    
-    url = f"https://2factor.in/API/V1/{API_KEY}/SMS/VERIFY/{session_id}/{otp}"
-    try:
-        response = requests.get(url).json()
-        if response['Status'] == 'Success':
-            return True, "Verified"
-        return False, "Invalid OTP"
-    except Exception:
-        return False, "Error"
+def generate_dummy_otp():
+    return str(random.randint(1000, 9999))
 
 # ----------------------------
 # ROUTES - SYSTEM FLOW
 # ----------------------------
-
 @app.route("/")
 def page1():
     tagline = translate_text("Connecting Farmers Directly to Consumers")
@@ -135,19 +106,27 @@ def page3():
     return render_template("page3.html")
 
 # --- CUSTOMER SECTION ---
-
 @app.route("/customer_login")
 def customer_login_page():
     return render_template("customer_login.html")
 
+@app.route("/send_customer_otp", methods=["POST"])
+def send_customer_otp():
+    mobile = request.form.get("mobile")
+    dummy_otp = generate_dummy_otp()
+    session['dummy_otp'] = dummy_otp
+    print(f"HACKATHON MODE: Generated Customer OTP for {mobile} is {dummy_otp}")
+    return jsonify({"status": "ok", "dummy_otp": dummy_otp})
+
 @app.route("/verify_customer_otp", methods=["POST"])
 def verify_customer_otp():
     data = request.get_json()
-    success, msg = verify_otp_2factor(data.get("otp"))
-    if success:
+    user_entered_otp = data.get("otp")
+
+    if user_entered_otp == session.get('dummy_otp') or user_entered_otp == "1234":
         session["customer_logged_in"] = True
         return jsonify({"status": "ok", "redirect": url_for("customer_home")})
-    return jsonify({"status": "fail", "message": msg})
+    return jsonify({"status": "fail", "message": "Invalid OTP. Please try again."})
 
 @app.route("/customer_home")
 def customer_home():
@@ -167,7 +146,6 @@ def customer_dashboard():
             filepath = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
             file.save(filepath)
 
-            # 1. YOLO Detection (Step 3)
             results = cv_model(filepath)
             plotted = results[0].plot()
             
@@ -175,10 +153,8 @@ def customer_dashboard():
             result_path = os.path.join(app.config["UPLOAD_FOLDER"], result_filename)
             cv2.imwrite(result_path, plotted)
 
-            # 2. HSV Analysis (Step 6 & 7)
             hsv_status, hsv_val = analyze_hsv_freshness(filepath)
 
-            # 3. Decision Engine (Step 9)
             conf = 0
             for r in results:
                 if len(r.boxes) > 0:
@@ -190,25 +166,42 @@ def customer_dashboard():
     return render_template("customer_dashboard.html", result_img=result_img, score=score, hsv_status=hsv_status)
 
 # --- FARMER SECTION ---
-
 @app.route("/farmer_login")
 def farmer_login_page():
     return render_template("farmer_login.html")
 
+@app.route("/send_farmer_otp", methods=["POST"])
+def send_farmer_otp():
+    mobile = request.form.get("mobile")
+    dummy_otp = generate_dummy_otp()
+    session['farmer_dummy_otp'] = dummy_otp
+    print(f"HACKATHON MODE: Generated Farmer OTP for {mobile} is {dummy_otp}")
+    return jsonify({"status": "ok", "dummy_otp": dummy_otp})
+
+@app.route("/verify_farmer_otp", methods=["POST"])
+def verify_farmer_otp():
+    data = request.get_json()
+    user_entered_otp = data.get("otp")
+
+    if user_entered_otp == session.get('farmer_dummy_otp') or user_entered_otp == "1234":
+        session["farmer_id"] = 1
+        return jsonify({"status": "ok", "redirect": url_for("farmer_details")})
+    return jsonify({"status": "fail", "message": "Invalid OTP. Please try again."})
+
+@app.route("/farmer_details")
+def farmer_details():
+    return render_template("farmer_verification.html")
+
 @app.route("/submit_farmer_verification", methods=["POST"])
 def submit_farmer_verification():
-    # Save files and data
     for key in ['aadhaar_file', 'patta_file', 'field_photo']:
-        f = request.files[key]
-        f.save(os.path.join(app.config["UPLOAD_FOLDER"], f.filename))
-    
-    # Store coordinates for the Geofencing feature
-    # In a real app, save request.form['latitude'] and longitude to DB here.
+        if key in request.files:
+            f = request.files[key]
+            f.save(os.path.join(app.config["UPLOAD_FOLDER"], f.filename))
     return "Verification submitted! Field verification pending."
 
 @app.route("/check_nearby_farmers", methods=["POST"])
 def check_nearby_farmers():
-    """Consumer Distance Check API (Step: Farmer Location Store)"""
     data = request.get_json()
     c_lat = float(data.get("lat"))
     c_lon = float(data.get("lon"))
@@ -221,14 +214,13 @@ def check_nearby_farmers():
     nearby = []
     for f in farmers:
         dist = haversine(c_lon, c_lat, float(f['longitude']), float(f['latitude']))
-        if dist <= 5.0: # 5km Radius Green Signal
+        if dist <= 5.0:
             nearby.append(f)
     
     db.close()
     return jsonify({"status": "ok", "nearby_count": len(nearby)})
 
 # --- LAND OCR ---
-
 @app.route("/farmer_land_verify", methods=["GET", "POST"])
 def farmer_land_verify():
     if request.method == "POST":
@@ -239,7 +231,6 @@ def farmer_land_verify():
         img = cv2.imread(filepath)
         text = pytesseract.image_to_string(img)
 
-        # Extraction logic
         owner_name = re.search(r"Owner\s*Name\s*[:\-]?\s*(.*)", text, re.I)
         owner_name = owner_name.group(1).strip() if owner_name else "Unknown"
 

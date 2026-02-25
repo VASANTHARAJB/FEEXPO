@@ -44,6 +44,9 @@ document.addEventListener("DOMContentLoaded", function() {
         const result = await response.json();
 
         if(result.status === "ok"){
+            // 🚀 HACKATHON MAGIC: Show the fake SMS alert!
+            alert("📱 NEW MESSAGE: Your Farmio login OTP is " + result.dummy_otp);
+            
             farmerOtpSection.style.display = "block";
             farmerMessage.innerText = "OTP sent successfully!";
         } else {
