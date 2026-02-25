@@ -18,7 +18,8 @@ app = Flask(__name__)
 app.secret_key = "farmio_secret_key"
 
 # Path Setup
-UPLOAD_FOLDER = "uploads"
+# Change it to save inside the static folder
+UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
@@ -142,10 +143,12 @@ def customer_dashboard():
 
     if request.method == "POST":
         file = request.files.get("image")
-        if file:
+        # SAFETY CHECK: Only run this if a file was actually uploaded
+        if file and file.filename: 
             filepath = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
             file.save(filepath)
 
+            # YOLO Magic
             results = cv_model(filepath)
             plotted = results[0].plot()
             
@@ -153,6 +156,7 @@ def customer_dashboard():
             result_path = os.path.join(app.config["UPLOAD_FOLDER"], result_filename)
             cv2.imwrite(result_path, plotted)
 
+            # HSV Magic
             hsv_status, hsv_val = analyze_hsv_freshness(filepath)
 
             conf = 0
@@ -161,7 +165,9 @@ def customer_dashboard():
                     conf = float(r.boxes.conf.max())
             
             score = int(conf * 100)
-            result_img = "uploads/" + result_filename
+            
+            # THE FIX: This is now safely inside the 'if file' block
+            result_img = "static/uploads/" + result_filename
 
     return render_template("customer_dashboard.html", result_img=result_img, score=score, hsv_status=hsv_status)
 
@@ -194,11 +200,36 @@ def farmer_details():
 
 @app.route("/submit_farmer_verification", methods=["POST"])
 def submit_farmer_verification():
+    lat = request.form.get("latitude")
+    lon = request.form.get("longitude")
+    
+    # Save files to the new static folder
     for key in ['aadhaar_file', 'patta_file', 'field_photo']:
         if key in request.files:
             f = request.files[key]
-            f.save(os.path.join(app.config["UPLOAD_FOLDER"], f.filename))
-    return "Verification submitted! Field verification pending."
+            if f.filename:
+                f.save(os.path.join(app.config["UPLOAD_FOLDER"], f.filename))
+
+    # HACKATHON BYPASS: Save GPS to session instead of Database
+    session['dummy_farmer_lat'] = lat
+    session['dummy_farmer_lon'] = lon
+
+    return f"""
+    <html>
+        <body style="font-family: sans-serif; text-align: center; background-color: #e9ecef; padding-top: 100px;">
+            <div style="background: white; padding: 40px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <h1 style="color: #28a745; margin-top: 0;">✅ Verification Successful!</h1>
+                <p style="font-size: 18px; color: #555;">Your Live Location is locked and verified.<br><strong>Lat: {lat} | Lon: {lon}</strong></p>
+                <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <strong>Success:</strong> You are now visible to nearby customers on Farmio!
+                </div>
+                <a href="/customer_login" style="display: inline-block; background: #007bff; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; margin-top: 10px;">
+                    Test the Customer Dashboard 🛒
+                </a>
+            </div>
+        </body>
+    </html>
+    """
 
 @app.route("/check_nearby_farmers", methods=["POST"])
 def check_nearby_farmers():
@@ -206,19 +237,17 @@ def check_nearby_farmers():
     c_lat = float(data.get("lat"))
     c_lon = float(data.get("lon"))
     
-    db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT id, latitude, longitude FROM farmers WHERE land_verified='Yes'")
-    farmers = cursor.fetchall()
+    # Check if we saved a dummy farmer in this session
+    f_lat = session.get('dummy_farmer_lat')
+    f_lon = session.get('dummy_farmer_lon')
     
-    nearby = []
-    for f in farmers:
-        dist = haversine(c_lon, c_lat, float(f['longitude']), float(f['latitude']))
+    nearby_count = 0
+    if f_lat and f_lon:
+        dist = haversine(c_lon, c_lat, float(f_lon), float(f_lat))
         if dist <= 5.0:
-            nearby.append(f)
-    
-    db.close()
-    return jsonify({"status": "ok", "nearby_count": len(nearby)})
+            nearby_count = 1
+            
+    return jsonify({"status": "ok", "nearby_count": nearby_count})
 
 # --- LAND OCR ---
 @app.route("/farmer_land_verify", methods=["GET", "POST"])

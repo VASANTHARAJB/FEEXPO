@@ -1,23 +1,347 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>FARMIO</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FARMIO - Smart Agriculture Solution</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* Premium Earthy & Emerald Palette */
+            --primary-color: #059669; /* Rich Emerald */
+            --secondary-color: #10b981; /* Bright Emerald */
+            --accent-color: #f59e0b; /* Warm Amber */
+            --text-main: #0f172a; /* Slate 900 */
+            --text-muted: #475569; /* Slate 600 */
+            
+            /* Glassmorphism Variables */
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --glass-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            
+            --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #ecfdf5;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Modern Animated Mesh Gradient Background */
+        .background-mesh {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            z-index: -1;
+            background: #d1fae5;
+        }
+
+        .background-mesh::before,
+        .background-mesh::after,
+        .mesh-blob {
+            content: "";
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.6;
+            animation: floatBlob 20s infinite alternate ease-in-out;
+        }
+
+        .background-mesh::before {
+            width: 50vw;
+            height: 50vw;
+            background: #34d399;
+            top: -10%;
+            left: -10%;
+        }
+
+        .background-mesh::after {
+            width: 40vw;
+            height: 40vw;
+            background: #fcd34d;
+            bottom: -10%;
+            right: -10%;
+            animation-delay: -5s;
+        }
+
+        .mesh-blob {
+            width: 45vw;
+            height: 45vw;
+            background: #10b981;
+            top: 30%;
+            left: 40%;
+            animation-delay: -10s;
+        }
+
+        @keyframes floatBlob {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(5%, 10%) scale(1.1); }
+            66% { transform: translate(-5%, 5%) scale(0.9); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
+        /* Ambient Noise Overlay for Premium Texture */
+        .noise-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Premium Glass Card */
+        .center-box {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            padding: 3.5rem 3rem;
+            width: 90%;
+            max-width: 480px;
+            text-align: center;
+            box-shadow: var(--glass-shadow);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            position: relative;
+            z-index: 2;
+            transform: translateY(0);
+            transition: var(--transition);
+        }
+
+        /* Subtle Shine Effect */
+        .center-box::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%);
+            border-radius: 32px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .center-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo {
+            width: 110px;
+            height: 110px;
+            margin-bottom: 1.5rem;
+            filter: drop-shadow(0 10px 15px rgba(5, 150, 105, 0.2));
+            animation: floatLogo 6s ease-in-out infinite;
+            border-radius: 24px; /* Assuming logo might have edges, rounds them out smoothly */
+        }
+
+        @keyframes floatLogo {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .app-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.75rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            background: linear-gradient(135deg, #064e3b, var(--primary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .tagline {
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+        }
+
+        /* Premium Button */
+        .start-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 2.5rem;
+            background: var(--text-main);
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 1.05rem;
+            transition: var(--transition);
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.15);
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .start-btn i {
+            margin-left: 10px;
+            font-size: 0.9rem;
+            transition: transform 0.3s ease;
+        }
+
+        .start-btn:hover {
+            background: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px rgba(5, 150, 105, 0.3);
+            color: #ffffff;
+        }
+
+        .start-btn:hover i {
+            transform: translateX(4px);
+        }
+
+        .start-btn:active {
+            transform: translateY(1px);
+        }
+
+        /* Modern Feature Badges */
+        .features {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2.5rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .feature {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: var(--transition);
+            flex: 1;
+        }
+
+        .feature:hover {
+            transform: translateY(-4px);
+        }
+
+        .feature-icon-wrapper {
+            width: 48px;
+            height: 48px;
+            background: #ffffff;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            color: var(--primary-color);
+            font-size: 1.25rem;
+            transition: var(--transition);
+            border: 1px solid rgba(0,0,0,0.02);
+        }
+
+        .feature:hover .feature-icon-wrapper {
+            background: var(--primary-color);
+            color: #ffffff;
+            box-shadow: 0 8px 16px rgba(5, 150, 105, 0.2);
+        }
+
+        .feature span {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 600px) {
+            .center-box {
+                width: 92%;
+                padding: 2.5rem 1.5rem;
+                border-radius: 24px;
+            }
+
+            .app-name {
+                font-size: 2.25rem;
+            }
+
+            .tagline {
+                font-size: 0.95rem;
+                margin-bottom: 2rem;
+            }
+
+            .start-btn {
+                padding: 0.9rem 2rem;
+            }
+
+            .feature-icon-wrapper {
+                width: 40px;
+                height: 40px;
+                font-size: 1.1rem;
+            }
+
+            .feature span {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
 </head>
 
-<body class="page1-bg">
+<body>
+    <div class="background-mesh">
+        <div class="mesh-blob"></div>
+    </div>
+    <div class="noise-overlay"></div>
 
     <div class="center-box">
-
-        <img src="{{ url_for('static', filename='A_logo_for_WEXPO_2026.png') }}" class="logo">
-
+        <img src="{{ url_for('static', filename='A_logo_for_WEXPO_2026.png') }}" class="logo" alt="FARMIO Logo">
+        
         <h1 class="app-name">FARMIO</h1>
-
+        
         <p class="tagline">{{ tagline }}</p>
-
-        <a href="/language" class="start-btn">{{ button_text }}</a>
-
+        
+        <a href="/language" class="start-btn">
+            {{ button_text }} <i class="fas fa-arrow-right"></i>
+        </a>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon-wrapper">
+                    <i class="fas fa-leaf"></i>
+                </div>
+                <span>Sustainable</span>
+            </div>
+            <div class="feature">
+                <div class="feature-icon-wrapper">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <span>Efficient</span>
+            </div>
+            <div class="feature">
+                <div class="feature-icon-wrapper">
+                    <i class="fas fa-microchip"></i> </div>
+                <span>Smart</span>
+            </div>
+        </div>
     </div>
-
 </body>
 </html>

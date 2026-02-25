@@ -1,36 +1,234 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Select Language</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Language - FARMIO</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            /* Consistent Premium Palette */
+            --primary-color: #059669; 
+            --secondary-color: #10b981; 
+            --text-main: #0f172a; 
+            --text-muted: #475569; 
+            
+            /* Glassmorphism Variables */
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --glass-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            
+            --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body.page2-bg {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #ecfdf5;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Seamless Animated Mesh Background */
+        .background-mesh {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            z-index: -1;
+            background: #d1fae5;
+        }
+
+        .background-mesh::before,
+        .background-mesh::after,
+        .mesh-blob {
+            content: "";
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.6;
+            animation: floatBlob 20s infinite alternate ease-in-out;
+        }
+
+        .background-mesh::before { width: 50vw; height: 50vw; background: #34d399; top: -10%; left: -10%; }
+        .background-mesh::after { width: 40vw; height: 40vw; background: #fcd34d; bottom: -10%; right: -10%; animation-delay: -5s; }
+        .mesh-blob { width: 45vw; height: 45vw; background: #10b981; top: 30%; left: 40%; animation-delay: -10s; }
+
+        @keyframes floatBlob {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(5%, 10%) scale(1.1); }
+            66% { transform: translate(-5%, 5%) scale(0.9); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
+        /* Glassmorphism Panel */
+        .glass-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            padding: 3rem 2.5rem;
+            width: 90%;
+            max-width: 700px; /* Wider to accommodate the grid nicely */
+            text-align: center;
+            box-shadow: var(--glass-shadow);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            position: relative;
+            z-index: 2;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .title-container {
+            margin-bottom: 2.5rem;
+        }
+
+        .icon-globe {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+
+        h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #064e3b, var(--primary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-weight: 500;
+        }
+
+        /* Modern Grid Layout */
+        .language-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        /* Premium Selectable Buttons */
+        .lang-box {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 16px;
+            padding: 1.25rem 1rem;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+        }
+
+        .lang-native {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .lang-box:hover {
+            background: var(--primary-color);
+            color: #ffffff;
+            border-color: var(--primary-color);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 20px rgba(5, 150, 105, 0.25);
+        }
+
+        .lang-box:hover .lang-native {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .lang-box:active {
+            transform: translateY(0);
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            .glass-panel {
+                padding: 2.5rem 1.5rem;
+                width: 92%;
+            }
+            h2 { font-size: 1.8rem; }
+            .language-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+            }
+            .lang-box {
+                padding: 1rem 0.5rem;
+                font-size: 0.95rem;
+            }
+        }
+    </style>
 </head>
 
 <body class="page2-bg">
 
-<h2>Select Your Language</h2>
+    <div class="background-mesh">
+        <div class="mesh-blob"></div>
+    </div>
 
-<form method="POST" action="/set_language">
+    <div class="glass-panel">
+        <div class="title-container">
+            <i class="fas fa-globe-asia icon-globe"></i>
+            <h2>Select Your Language</h2>
+            <p class="subtitle">Choose your preferred language to continue</p>
+        </div>
 
-<div class="language-grid">
-
-    <button name="language" value="en" class="lang-box">English</button>
-    <button name="language" value="ta" class="lang-box">Tamil</button>
-    <button name="language" value="ml" class="lang-box">Malayalam</button>
-    <button name="language" value="te" class="lang-box">Telugu</button>
-    <button name="language" value="kn" class="lang-box">Kannada</button>
-    <button name="language" value="bn" class="lang-box">Bengali</button>
-    <button name="language" value="gu" class="lang-box">Gujarati</button>
-    <button name="language" value="pa" class="lang-box">Punjabi</button>
-    <button name="language" value="ur" class="lang-box">Urdu</button>
-    <button name="language" value="bho" class="lang-box">Bhojpuri</button>
-    <button name="language" value="as" class="lang-box">Assamese</button>
-    <button name="language" value="or" class="lang-box">Odia</button>
-    <button name="language" value="mr" class="lang-box">Marathi</button>
-    <button name="language" value="hi" class="lang-box">Hindi</button>
-
-</div>
-
-</form>
+        <form method="POST" action="/set_language">
+            <div class="language-grid">
+                <button name="language" value="en" class="lang-box">English <span class="lang-native">English</span></button>
+                <button name="language" value="hi" class="lang-box">Hindi <span class="lang-native">हिंदी</span></button>
+                <button name="language" value="ta" class="lang-box">Tamil <span class="lang-native">தமிழ்</span></button>
+                <button name="language" value="te" class="lang-box">Telugu <span class="lang-native">తెలుగు</span></button>
+                <button name="language" value="ml" class="lang-box">Malayalam <span class="lang-native">മലയാളം</span></button>
+                <button name="language" value="kn" class="lang-box">Kannada <span class="lang-native">ಕನ್ನಡ</span></button>
+                <button name="language" value="mr" class="lang-box">Marathi <span class="lang-native">मराठी</span></button>
+                <button name="language" value="bn" class="lang-box">Bengali <span class="lang-native">বাংলা</span></button>
+                <button name="language" value="gu" class="lang-box">Gujarati <span class="lang-native">ગુજરાતી</span></button>
+                <button name="language" value="pa" class="lang-box">Punjabi <span class="lang-native">ਪੰਜਾਬੀ</span></button>
+                <button name="language" value="or" class="lang-box">Odia <span class="lang-native">ଓଡ଼ିଆ</span></button>
+                <button name="language" value="as" class="lang-box">Assamese <span class="lang-native">অসমীয়া</span></button>
+                <button name="language" value="bho" class="lang-box">Bhojpuri <span class="lang-native">भोजपुरी</span></button>
+                <button name="language" value="ur" class="lang-box">Urdu <span class="lang-native">اردو</span></button>
+            </div>
+        </form>
+    </div>
 
 </body>
 </html>
