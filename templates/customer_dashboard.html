@@ -2,30 +2,119 @@
 <html>
 <head>
     <title>Customer Dashboard</title>
+    <style>
+        .card { 
+            background: rgba(255, 255, 255, 0.95); 
+            padding: 30px; 
+            border-radius: 12px; 
+            max-width: 600px; 
+            margin: 40px auto; 
+            font-family: sans-serif; 
+            text-align: center; 
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2); 
+        }
+        button { cursor: pointer; border: none; border-radius: 6px; font-weight: bold; }
+    </style>
 </head>
 
-<body style="background-image:url('/static/bg.jpg'); background-size:cover;">
+<body style="background-image:url('/static/bg.jpg'); background-size:cover; padding: 20px;">
 
-<h2>Upload Fruit Image</h2>
+<div class="card">
+    <h2 style="color: #333; margin-top: 0;">🍎 AI Quality Check & Buy</h2>
+    <p style="color: #666; margin-bottom: 20px;">Upload an image of the product to verify its freshness before buying.</p>
 
-<form method="POST" enctype="multipart/form-data">
-    <input type="file" name="image" required>
-    <button type="submit">Check Quality</button>
-</form>
+    <form method="POST" enctype="multipart/form-data" style="margin-bottom: 20px;">
+        <input type="file" name="image" required style="margin-bottom: 15px; font-size: 16px;">
+        <br>
+        <button type="submit" style="background: #007bff; color: white; padding: 12px 24px; font-size: 16px;">
+            🔍 Check Quality
+        </button>
+    </form>
 
-{% if uploaded_img %}
-    <h3>Original Image:</h3>
-    <img src="{{ uploaded_img }}" width="300">
-{% endif %}
+    {% if result_img %}
+        <hr style="margin: 30px 0; border: 1px solid #ddd;">
+        <h3 style="color: #333;">Step 1: AI Verification Result</h3>
+        
+        <img src="{{ result_img }}" width="100%" style="max-width: 400px; border-radius: 8px; border: 3px solid #28a745; margin-bottom: 15px;">
 
-{% if result_img %}
-    <h3>Detected Image:</h3>
-    <img src="{{ result_img }}" width="300">
-{% endif %}
+        {% if score %}
+            <h4 style="margin: 5px 0;">YOLO Confidence Score: <span style="color: #28a745; font-size: 1.2em;">{{ score }}%</span></h4>
+        {% endif %}
 
-{% if score %}
-    <h3>Confidence Score: {{ score }}%</h3>
-{% endif %}
+        {% if hsv_status %}
+            <h4 style="margin: 5px 0;">Color & Freshness Analysis (HSV): 
+                {% if 'Fresh' in hsv_status %}
+                    <span style="color: #28a745; font-weight: bold; font-size: 1.2em;">{{ hsv_status }} 🌿</span>
+                {% else %}
+                    <span style="color: #dc3545; font-weight: bold; font-size: 1.2em;">{{ hsv_status }} ⚠️</span>
+                {% endif %}
+            </h4>
+        {% endif %}
 
+        <hr style="margin: 30px 0; border: 1px solid #ddd;">
+        
+        <h3 style="color: #333;">Step 2: Find Local Farmers</h3>
+        <p style="font-size: 14px; color: #555;">Use Live GPS to find verified farmers within 5km.</p>
+        
+        <button onclick="checkDeliveryZone()" style="background: #28a745; color: white; padding: 12px 25px; font-size: 16px; margin-bottom: 15px;">
+            📍 Check Nearby Farmers
+        </button>
+        
+        <div id="green-signal-display" style="margin-top: 15px; font-size: 16px;"></div>
+
+        <button id="buy-btn" onclick="placeOrder()" style="display:none; background: #ff9900; color: white; padding: 15px 30px; font-size: 18px; margin: 20px auto; width: 100%;">
+            🛒 BUY FRESH PRODUCE NOW
+        </button>
+    {% endif %}
+
+</div>
+
+<script>
+function checkDeliveryZone() {
+    const display = document.getElementById('green-signal-display');
+    display.innerHTML = "<b>Scanning local area via GPS... 🛰️</b>";
+    display.style.color = "orange";
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            const coords = { 
+                lat: position.coords.latitude, 
+                lon: position.coords.longitude 
+            };
+
+            fetch('/check_nearby_farmers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(coords)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.nearby_count > 0) {
+                    display.innerHTML = `<div style="padding:15px; background:#d4edda; color:#155724; border-radius:10px; border: 1px solid #c3e6cb;">
+                        <strong>✅ GREEN SIGNAL!</strong> Found ${data.nearby_count} verified farmer(s) within 5km. Free delivery available.
+                    </div>`;
+                    document.getElementById('buy-btn').style.display = 'block';
+                } else {
+                    display.innerHTML = `<div style="padding:15px; background:#fff3cd; color:#856404; border-radius:10px; border: 1px solid #ffeeba;">
+                        <strong>📍 Outside 5km Zone.</strong> No verified farmers nearby. Standard delivery rates apply.
+                    </div>`;
+                    document.getElementById('buy-btn').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                display.innerHTML = `<b style="color:red;">Error connecting to server.</b>`;
+            });
+        }, function(error) {
+            display.innerHTML = `<b style="color:red;">❌ Please click "Allow" on the location pop-up at the top of your browser.</b>`;
+        });
+    } else {
+        display.innerHTML = `<b style="color:red;">Geolocation is not supported by your browser.</b>`;
+    }
+}
+
+function placeOrder() {
+    alert("🎉 SUCCESS! Your order for Fresh Produce has been placed.\n\nThe nearby farmer has been notified and delivery is on the way!");
+}
+</script>
 </body>
 </html>
