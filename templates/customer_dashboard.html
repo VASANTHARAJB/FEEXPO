@@ -1,122 +1,275 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Customer Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ t('Farmio - Customer Dashboard') }}</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <style>
-        .card { 
-            background: rgba(255, 255, 255, 0.95); 
-            padding: 30px; 
-            border-radius: 12px; 
-            max-width: 600px; 
-            margin: 40px auto; 
-            font-family: sans-serif; 
-            text-align: center; 
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2); 
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { 
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); 
+            color: #2b2b2b; padding: 40px 20px; margin: 0; min-height: 100vh;
         }
-        button { cursor: pointer; border: none; border-radius: 6px; font-weight: bold; }
+        
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { font-size: 32px; font-weight: 700; color: #1a1a1a; margin-bottom: 5px; }
+        .header p { color: #6e6e6e; font-size: 16px; }
+
+        .dashboard-grid {
+            max-width: 1100px; margin: 0 auto;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 30px;
+        }
+
+        /* Card Styling */
+        .card {
+            background: #ffffff; padding: 35px; border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.05); position: relative;
+            border-top: 5px solid;
+        }
+        .card.ai-card { border-top-color: #667eea; }
+        .card.radar-card { border-top-color: #38ef7d; }
+        
+        .card-title { font-size: 20px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        
+        /* Upload UI */
+        .file-upload-wrapper {
+            position: relative; background: #fafafa; border: 2px dashed #cbd5e0; 
+            border-radius: 12px; padding: 30px 20px; text-align: center;
+            transition: all 0.3s ease; cursor: pointer; margin-bottom: 20px;
+        }
+        .file-upload-wrapper:hover { border-color: #667eea; background: #ebf4ff; }
+        .file-upload-wrapper input[type="file"] {
+            position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
+        }
+        .file-upload-wrapper i { font-size: 36px; color: #a0aec0; margin-bottom: 10px; }
+        .file-upload-wrapper p { margin: 0; font-weight: 500; color: #4a5568; }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2); color: white;
+            border: none; padding: 14px 20px; font-size: 16px; border-radius: 10px;
+            cursor: pointer; font-weight: 600; width: 100%; transition: all 0.3s ease;
+        }
+        .btn-primary:hover { box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4); transform: translateY(-2px); }
+
+        .btn-success {
+            background: linear-gradient(45deg, #11998e, #38ef7d); color: white;
+            border: none; padding: 16px 20px; font-size: 16px; border-radius: 10px;
+            cursor: pointer; font-weight: 600; width: 100%; transition: all 0.3s ease;
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        .btn-success:hover { box-shadow: 0 8px 20px rgba(56, 239, 125, 0.4); transform: translateY(-2px); }
+
+        /* AI Results Styling */
+        .result-box { margin-top: 25px; text-align: center; animation: fadeIn 0.5s ease; }
+        .result-img { max-width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        
+        .badge { padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-block; margin: 5px; }
+        .badge.fresh { background: #d4edda; color: #155724; }
+        .badge.stale { background: #f8d7da; color: #721c24; }
+        .badge.ai { background: #e0e7ff; color: #3730a3; }
+
+        /* Radar Results */
+        #radar-results { margin-top: 25px; display: none; animation: fadeIn 0.5s ease; }
+        .farmer-card {
+            background: #f0fff4; border: 1px solid #c6f6d5; border-radius: 12px; padding: 20px;
+            display: flex; flex-direction: column; gap: 15px;
+        }
+        .farmer-info-row { display: flex; align-items: flex-start; gap: 15px; }
+        .farmer-info-row i { font-size: 28px; color: #38a169; margin-top: 5px; }
+        .farmer-details h4 { margin: 0 0 5px 0; color: #22543d; font-size: 18px; }
+        .farmer-details p { margin: 0; color: #2f855a; font-size: 14px; }
+        
+        .no-farmer { background: #fff5f5; border: 1px solid #fed7d7; padding: 20px; border-radius: 12px; color: #c53030; text-align: center; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 768px) { .dashboard-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
+<body>
 
-<body style="background-image:url('/static/bg.jpg'); background-size:cover; padding: 20px;">
+<div class="header">
+    <h1>{{ t('Farmio Marketplace') }}</h1>
+    <p>{{ t('Scan for quality. Connect locally.') }}</p>
+</div>
 
-<div class="card">
-    <h2 style="color: #333; margin-top: 0;">🍎 AI Quality Check & Buy</h2>
-    <p style="color: #666; margin-bottom: 20px;">Upload an image of the product to verify its freshness before buying.</p>
-
-    <form method="POST" enctype="multipart/form-data" style="margin-bottom: 20px;">
-        <input type="file" name="image" required style="margin-bottom: 15px; font-size: 16px;">
-        <br>
-        <button type="submit" style="background: #007bff; color: white; padding: 12px 24px; font-size: 16px;">
-            🔍 Check Quality
-        </button>
-    </form>
-
-    {% if result_img %}
-        <hr style="margin: 30px 0; border: 1px solid #ddd;">
-        <h3 style="color: #333;">Step 1: AI Verification Result</h3>
+<div class="dashboard-grid">
+    
+    <div class="card ai-card">
+        <h2 class="card-title"><i class="fa-solid fa-microscope" style="color: #667eea;"></i> {{ t('Step 1: AI Quality Check') }}</h2>
         
-        <img src="{{ result_img }}" width="100%" style="max-width: 400px; border-radius: 8px; border: 3px solid #28a745; margin-bottom: 15px;">
-
-        {% if score %}
-            <h4 style="margin: 5px 0;">YOLO Confidence Score: <span style="color: #28a745; font-size: 1.2em;">{{ score }}%</span></h4>
-        {% endif %}
-
-        {% if hsv_status %}
-            <h4 style="margin: 5px 0;">Color & Freshness Analysis (HSV): 
-                {% if 'Fresh' in hsv_status %}
-                    <span style="color: #28a745; font-weight: bold; font-size: 1.2em;">{{ hsv_status }} 🌿</span>
-                {% else %}
-                    <span style="color: #dc3545; font-weight: bold; font-size: 1.2em;">{{ hsv_status }} ⚠️</span>
-                {% endif %}
-            </h4>
-        {% endif %}
-
-        <hr style="margin: 30px 0; border: 1px solid #ddd;">
-        
-        {% if 'Fresh' in hsv_status %}
-            
-            <h3 style="color: #333;">Step 2: Find Local Farmers</h3>
-            <p style="font-size: 14px; color: #555;">Use Live GPS to find verified farmers within 5km.</p>
-            
-            <button onclick="checkDeliveryZone()" style="background: #28a745; color: white; padding: 12px 25px; font-size: 16px; margin-bottom: 15px;">
-                📍 Check Nearby Farmers
-            </button>
-            
-            <div id="green-signal-display" style="margin-top: 15px; font-size: 16px;"></div>
-
-            <button id="buy-btn" onclick="placeOrder()" style="display:none; background: #ff9900; color: white; padding: 15px 30px; font-size: 18px; margin: 20px auto; width: 100%;">
-                🛒 BUY FRESH PRODUCE NOW
-            </button>
-
-        {% else %}
-
-            <div style="padding:20px; background:#f8d7da; color:#721c24; border-radius:10px; border: 2px solid #f5c6cb;">
-                <h3 style="margin-top: 0;">🛑 PURCHASE BLOCKED</h3>
-                <p style="font-weight: bold; font-size: 16px;">Our AI detected that this product is stale, browning, or infected with fungus.</p>
-                <p style="margin-bottom: 0;">To protect consumer health, Farmio automatically blocks the sale of spoiled produce. Please upload a fresh item.</p>
+        <form action="/customer_dashboard" method="POST" enctype="multipart/form-data">
+            <div class="file-upload-wrapper">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <p id="file-name">{{ t('Click to upload vegetable photo') }}</p>
+                <input type="file" name="image" required accept="image/*" onchange="document.getElementById('file-name').innerText = '{{ t('Selected: ') }}' + this.files[0].name">
             </div>
+            <button type="submit" class="btn-primary">{{ t('Scan Freshness') }}</button>
+        </form>
 
+        {% if result_img %}
+        <div class="result-box">
+            <img src="{{ result_img }}" class="result-img" alt="{{ t('AI Scan Result') }}">
+            <div>
+                <span class="badge ai"><i class="fa-solid fa-robot"></i> {{ t('Detected:') }} {{ label|title }} ({{ score }}%)</span>
+                
+                {% if "Stale" in hsv_status %}
+                    <span class="badge stale"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('Stale/Browning Detected') }}</span>
+                    <p style="color: #e53e3e; font-weight: 600; margin-top: 15px; font-size: 18px;">🛑 {{ t('PURCHASE BLOCKED') }}</p>
+                {% else %}
+                    <span class="badge fresh"><i class="fa-solid fa-leaf"></i> {{ t('Fresh Color Profile') }}</span>
+                    <p style="color: #38a169; font-weight: 600; margin-top: 15px; font-size: 18px;">✅ {{ t('CLEARED FOR PURCHASE') }}</p>
+                {% endif %}
+            </div>
+        </div>
         {% endif %}
+    </div>
 
-    {% endif %}
+    <div class="card radar-card">
+        <h2 class="card-title"><i class="fa-solid fa-satellite-dish" style="color: #38ef7d;"></i> {{ t('Step 2: Farm Radar') }}</h2>
+        <p style="color: #718096; font-size: 14px; margin-bottom: 20px;">
+            {{ t('Our system uses live GPS to connect you with verified farmers within a strict 10km radius for ultra-fresh delivery.') }}
+        </p>
+
+        <button class="btn-success" id="radar-btn" onclick="scanNearbyFarmers()">
+            <i class="fa-solid fa-location-crosshairs"></i> {{ t('Scan for Local Farmers') }}
+        </button>
+
+        <div id="radar-results">
+            </div>
+    </div>
 
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
-function checkDeliveryZone() {
-    const display = document.getElementById('green-signal-display');
-    display.innerHTML = "<b>Scanning local area via GPS... 🛰️</b>";
-    display.style.color = "orange";
+// Global variables to hold our map and live markers
+let liveMap = null;
+let customerMarker = null;
+let farmerMarker = null;
+let routeLine = null;
+let watchId = null;
+
+function scanNearbyFarmers() {
+    const btn = document.getElementById("radar-btn");
+    const results = document.getElementById("radar-results");
+    
+    // UI update to show tracking has started
+    btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> {{ t('Locking Live GPS Signal...') }}";
+    btn.style.opacity = "0.8";
 
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-            const coords = { lat: position.coords.latitude, lon: position.coords.longitude };
-            fetch('/check_nearby_farmers', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(coords)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.nearby_count > 0) {
-                    display.innerHTML = `<div style="padding:15px; background:#d4edda; color:#155724; border-radius:10px; border: 1px solid #c3e6cb;">
-                        <strong>✅ GREEN SIGNAL!</strong> Found ${data.nearby_count} verified farmer(s) within 5km. Free delivery available.
-                    </div>`;
-                    document.getElementById('buy-btn').style.display = 'block';
-                } else {
-                    display.innerHTML = `<div style="padding:15px; background:#fff3cd; color:#856404; border-radius:10px; border: 1px solid #ffeeba;">
-                        <strong>📍 Outside 5km Zone.</strong> No verified farmers nearby. Standard delivery rates apply.
-                    </div>`;
-                    document.getElementById('buy-btn').style.display = 'block';
-                }
-            })
-            .catch(error => { display.innerHTML = `<b style="color:red;">Error connecting to server.</b>`; });
-        }, function(error) { display.innerHTML = `<b style="color:red;">❌ Please click "Allow" on the location pop-up.</b>`; });
-    } else { display.innerHTML = `<b style="color:red;">Geolocation is not supported by your browser.</b>`; }
-}
-function placeOrder() {
-    alert("🎉 SUCCESS! Your order for Fresh Produce has been placed.\n\nThe nearby farmer has been notified and delivery is on the way!");
+        // watchPosition tracks movement continuously!
+        watchId = navigator.geolocation.watchPosition(
+            (position) => {
+                let lat = position.coords.latitude;
+                let lon = position.coords.longitude;
+                
+                // Fetch the farmer's location from Python backend
+                fetch('/check_nearby_farmers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat: lat, lon: lon })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    results.style.display = "block";
+                    
+                    // Turn button red and pulsing to indicate LIVE tracking
+                    btn.innerHTML = "<i class='fa-solid fa-satellite-dish fa-beat'></i> Live Tracking Active";
+                    btn.style.background = "#e53e3e"; 
+                    btn.style.color = "white";
+
+                    if (data.nearby_count > 0 && data.farmer_lat && data.farmer_lon) {
+                        let fLat = parseFloat(data.farmer_lat);
+                        let fLon = parseFloat(data.farmer_lon);
+
+                        // If map doesn't exist yet, build the UI!
+                        if (!liveMap) {
+                            results.innerHTML = `
+                                <div class="farmer-card">
+                                    <div class="farmer-info-row">
+                                        <i class="fa-solid fa-tractor"></i>
+                                        <div class="farmer-details">
+                                            <h4>✅ {{ t('Verified Local Farm Found') }}</h4>
+                                            <p><i class="fa-solid fa-location-dot"></i> <b>{{ t('Location:') }}</b> ${data.location_name}</p>
+                                            <p><i class="fa-solid fa-route"></i> <b><span id="live-distance">${data.distance}</span></b> {{ t('km away!') }}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="delivery-map" style="height: 250px; width: 100%; border-radius: 10px; z-index: 1; border: 2px solid #e2e8f0; margin-top: 15px;"></div>
+
+                                    <button style="margin-top: 10px; background: #2f855a; color: white; border: none; padding: 14px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px;">
+                                        {{ t('Proceed to Payment') }} 🛒
+                                    </button>
+                                </div>
+                            `;
+
+                            // Wait 100ms for HTML to load, then initialize map
+                            setTimeout(() => {
+                                liveMap = L.map('delivery-map').setView([lat, lon], 14);
+                                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                                    attribution: '&copy; CARTO'
+                                }).addTo(liveMap);
+
+                                // Create Customer (Blue) and Farmer (Green) icons
+                                let customerIcon = L.divIcon({ html: '<i class="fa-solid fa-house-user" style="color: #2b6cb0; font-size: 28px; filter: drop-shadow(0px 3px 4px rgba(0,0,0,0.3));"></i>', className: 'custom-marker' });
+                                let farmerIcon = L.divIcon({ html: '<i class="fa-solid fa-tractor" style="color: #2f855a; font-size: 28px; filter: drop-shadow(0px 3px 4px rgba(0,0,0,0.3));"></i>', className: 'custom-marker' });
+
+                                // Drop pins
+                                customerMarker = L.marker([lat, lon], {icon: customerIcon}).addTo(liveMap).bindPopup("<b>{{ t('You are here') }}</b>").openPopup();
+                                farmerMarker = L.marker([fLat, fLon], {icon: farmerIcon}).addTo(liveMap).bindPopup(`<b>{{ t('Farm Location') }}</b><br>${data.location_name}`);
+
+                                // Draw Route
+                                routeLine = L.polyline([[lat, lon], [fLat, fLon]], {color: '#38a169', dashArray: '8, 8', weight: 4}).addTo(liveMap);
+                                
+                                liveMap.fitBounds(routeLine.getBounds(), {padding: [30, 30]});
+                            }, 100);
+                        } else {
+                            // IF MAP ALREADY EXISTS, JUST UPDATE THE LIVE MOVEMENT!
+                            customerMarker.setLatLng([lat, lon]);
+                            routeLine.setLatLngs([[lat, lon], [fLat, fLon]]);
+                            
+                            // Check if element exists before updating to prevent JS errors
+                            let distSpan = document.getElementById("live-distance");
+                            if (distSpan) {
+                                distSpan.innerText = data.distance;
+                            }
+                        }
+
+                    } else {
+                        results.innerHTML = `
+                            <div class="no-farmer">
+                                <h4><i class="fa-solid fa-xmark"></i> {{ t('No Farms Found') }}</h4>
+                                <p>{{ t('Sorry, there are no verified farmers within 10km of your current location.') }}</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(err => {
+                    console.error("Live Map Error:", err);
+                });
+            },
+            (error) => {
+                alert("{{ t('Please allow location access to find farmers.') }}");
+                btn.innerHTML = "<i class='fa-solid fa-location-crosshairs'></i> {{ t('Scan for Local Farmers') }}";
+            },
+            { 
+                enableHighAccuracy: true, 
+                maximumAge: 0, 
+                timeout: 5000 
+            }
+        );
+    } else {
+        alert("{{ t('Geolocation is not supported by your browser.') }}");
+    }
 }
 </script>
+
 </body>
 </html>

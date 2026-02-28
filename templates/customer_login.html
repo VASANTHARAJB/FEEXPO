@@ -2,34 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Customer Login</title>
+    <title>{{ t('Customer Login') }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 <div class="form-card">
     <h1 class="app-title">FARMIO</h1>
-    <p class="tagline">Connecting Farmers Directly to Consumers</p>
+    <p class="tagline">{{ t('Connecting Farmers Directly to Consumers') }}</p>
 
-    <!-- CUSTOMER FORM -->
     <form id="customerForm">
-        <label for="mobile">Mobile Number</label>
-        <input type="text" name="mobile" class="form-input" placeholder="Enter Mobile" required>
+        <label for="mobile">{{ t('Mobile Number') }}</label>
+        <input type="text" name="mobile" class="form-input" placeholder="{{ t('Enter Mobile Number') }}" required>
 
-        <label for="email">Email</label>
-        <input type="email" name="email" class="form-input" placeholder="Enter Email" required>
+        <label for="email">{{ t('Email Address') }}</label>
+        <input type="email" name="email" class="form-input" placeholder="{{ t('Enter Email Address') }}" required>
 
-        <button type="submit" class="form-btn">Send OTP</button>
+        <button type="submit" class="form-btn">{{ t('Send OTP') }}</button>
     </form>
 
-    <!-- OTP SECTION - hidden initially -->
     <div id="otpSection" style="display:none; margin-top:20px;">
-        <label for="otpInput">Enter OTP</label>
-        <input type="text" id="otpInput" class="form-input" placeholder="Enter OTP">
+        <label for="otpInput">{{ t('Enter OTP') }}</label>
+        <input type="text" id="otpInput" class="form-input" placeholder="{{ t('Enter OTP') }}">
 
-        <button id="verifyOtpBtn" class="form-btn">Verify OTP</button>
+        <button id="verifyOtpBtn" class="form-btn">{{ t('Verify & Login') }}</button>
     </div>
 
-    <!-- Inline Message -->
     <div id="message" class="success-msg" style="display:block; text-align:center; margin-top:15px;"></div>
 </div>
 
@@ -44,42 +41,48 @@ document.addEventListener("DOMContentLoaded", function() {
     // SEND OTP
     customerForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        message.innerText = "Sending OTP...";
+        message.innerText = "{{ t('Sending OTP...') }}";
 
         const formData = new FormData(customerForm);
         const response = await fetch("/send_customer_otp", { method:"POST", body:formData });
         const result = await response.json();
 
         if(result.status === "ok"){
+            // 🚀 HACKATHON MAGIC: Translated SMS Alert!
+            alert("📱 {{ t('NEW MESSAGE: Your Farmio login OTP is') }} " + result.dummy_otp);
+
             otpSection.style.display = "block";   // SHOW OTP box
-            message.innerText = "OTP sent successfully!";
+            message.innerText = "{{ t('OTP sent successfully!') }}";
         } else {
-            message.innerText = "Failed to send OTP!";
+            message.innerText = "{{ t('Failed to send OTP!') }}";
         }
     });
 
     // VERIFY OTP
     verifyOtpBtn.addEventListener("click", async () => {
-    const otp = otpInput.value.trim();
+        const otp = otpInput.value.trim();
 
-    const response = await fetch("/verify_customer_otp", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({otp})
+        if(otp === ""){
+            message.innerText = "{{ t('Please enter OTP') }}";
+            return;
+        }
+
+        const response = await fetch("/verify_customer_otp", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({otp})
+        });
+
+        const result = await response.json();
+        message.innerText = result.message;
+
+        // REDIRECT after success
+        if(result.status === "ok"){
+            window.location.href = result.redirect;
+        }
     });
-
-    const result = await response.json();
-    message.innerText = result.message;
-
-    // REDIRECT after success
-    if(result.status === "ok"){
-        window.location.href = result.redirect;
-    }
 });
 
-
-        
-});
 function checkDeliveryZone() {
     if (navigator.geolocation) {
         // Get the Consumer's current Live GPS
@@ -100,19 +103,19 @@ function checkDeliveryZone() {
                 const display = document.getElementById('green-signal-display');
                 if (data.nearby_count > 0) {
                     display.innerHTML = `<div style="padding:15px; background:#d4edda; color:#155724; border-radius:10px;">
-                        <strong>✅ Green Signal!</strong> We found ${data.nearby_count} farmers near you. 
-                        Free delivery is active!
+                        <strong>✅ {{ t('Green Signal!') }}</strong> {{ t('We found') }} ${data.nearby_count} {{ t('farmers near you.') }} 
+                        {{ t('Free delivery is active!') }}
                     </div>`;
                 } else {
                     display.innerHTML = `<div style="padding:15px; background:#f8d7da; color:#721c24; border-radius:10px;">
-                        <strong>📍 Outside Zone.</strong> No verified farmers within 5km. 
-                        Standard delivery rates apply.
+                        <strong>📍 {{ t('Outside Zone.') }}</strong> {{ t('No verified farmers within 5km.') }} 
+                        {{ t('Standard delivery rates apply.') }}
                     </div>`;
                 }
             });
         });
     } else {
-        alert("Geolocation is not supported by this browser.");
+        alert("{{ t('Geolocation is not supported by your browser.') }}");
     }
 }
 </script>

@@ -5,10 +5,11 @@ import numpy as np
 import requests
 import random
 import mysql.connector
+import json
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify
 from math import radians, cos, sin, asin, sqrt
-from deep_translator import GoogleTranslator
 import pytesseract
+from google import genai
 from ultralytics import YOLO
 
 # ----------------------------
@@ -18,13 +19,16 @@ app = Flask(__name__)
 app.secret_key = "farmio_secret_key"
 
 # Path Setup
-# Change it to save inside the static folder
 UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-# Tesseract Setup
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+# Google AI Studio (Gemini) Setup - NEW SDK
+# PASTE YOUR ACTUAL KEY HERE
+gemini_client = genai.Client(api_key="YOUR_GOOGLE_AI_STUDIO_KEY")
+
+# Tesseract Setup (Keep commented out if Tesseract isn't installed on the presentation laptop)
+# pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 # YOLO Setup
 try:
@@ -44,19 +48,39 @@ def get_db_connection():
     )
 
 # ----------------------------
+# GLOBAL JSON TRANSLATOR (LIGHTNING FAST)
+# ----------------------------
+# Load the JSON file into memory when the server starts
+try:
+    with open('translations.json', 'r', encoding='utf-8') as f:
+        translations = json.load(f)
+except Exception as e:
+    print(f"Warning: Could not load translations.json: {e}")
+    translations = {}
+
+@app.context_processor
+def inject_translator():
+    def t(text):
+        lang = session.get("lang", "en")
+        
+        # If English or empty, return immediately (Speed Boost)
+        if lang == "en" or not text:
+            return text
+            
+        # Check if the language and exact text exist in our JSON file
+        if lang in translations and text in translations[lang]:
+            return translations[lang][text]
+            
+        # Fallback: Return English if translation is missing from JSON
+        return text 
+            
+    return dict(t=t)
+
+# ----------------------------
 # HELPER FUNCTIONS
 # ----------------------------
-def translate_text(text):
-    lang = session.get("lang", "en")
-    if lang == "en":
-        return text
-    try:
-        return GoogleTranslator(source='auto', target=lang).translate(text)
-    except Exception:
-        return text
-
 def haversine(lon1, lat1, lon2, lat2):
-    """Calculate distance between two GPS points in KM"""
+    """Calculate distance between two GPS points in KM using Haversine formula"""
     lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
     dlon = lon2 - lon1 
     dlat = lat2 - lat1 
@@ -79,9 +103,6 @@ def analyze_hsv_freshness(image_path):
         return "Stale/Browning Detected", int(avg_s/2.55)
     return "Fresh Color Profile", int(avg_s/2.55)
 
-# ----------------------------
-# HACKATHON DUMMY OTP LOGIC
-# ----------------------------
 def generate_dummy_otp():
     return str(random.randint(1000, 9999))
 
@@ -90,8 +111,7 @@ def generate_dummy_otp():
 # ----------------------------
 @app.route("/")
 def page1():
-    tagline = translate_text("Connecting Farmers Directly to Consumers")
-    return render_template("page1.html", tagline=tagline)
+    return render_template("page1.html")
 
 @app.route("/language")
 def page2():
@@ -99,12 +119,30 @@ def page2():
 
 @app.route("/set_language", methods=["POST"])
 def set_language():
-    session["lang"] = request.form.get("language")
-    return redirect(url_for("page3"))
+    selected_lang = request.form.get("language")
+    session["lang"] = selected_lang
+    print(f"✅ User switched language to: {selected_lang}")
+    
+    # FIX: Send them to the next page (page3) instead of refreshing!
+    return redirect(url_for('page3'))
 
 @app.route("/home")
 def page3():
     return render_template("page3.html")
+
+# --- AI ADVICE (Using Gemini SDK) ---
+@app.route("/get_ai_advice", methods=["POST"])
+def get_ai_advice():
+    veg_name = request.json.get("vegetable")
+    prompt = f"I just bought fresh {veg_name} from a local farmer. Give me a 2-sentence healthy cooking tip for it."
+    try:
+        response = gemini_client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=prompt
+        )
+        return jsonify({"advice": response.text})
+    except Exception:
+        return jsonify({"advice": "Wash thoroughly and enjoy your farm-fresh meal!"})
 
 # --- CUSTOMER SECTION ---
 @app.route("/customer_login")
@@ -126,29 +164,23 @@ def verify_customer_otp():
 
     if user_entered_otp == session.get('dummy_otp') or user_entered_otp == "1234":
         session["customer_logged_in"] = True
-        return jsonify({"status": "ok", "redirect": url_for("customer_home")})
+        return jsonify({"status": "ok", "redirect": url_for("customer_dashboard")})
     return jsonify({"status": "fail", "message": "Invalid OTP. Please try again."})
-
-@app.route("/customer_home")
-def customer_home():
-    if "customer_logged_in" not in session:
-        return redirect(url_for("customer_login_page"))
-    return render_template("customer_home.html")
 
 @app.route("/customer_dashboard", methods=["GET", "POST"])
 def customer_dashboard():
     result_img = None
     score = None
     hsv_status = None
+    label = "Unknown"
 
     if request.method == "POST":
         file = request.files.get("image")
-        # SAFETY CHECK: Only run this if a file was actually uploaded
         if file and file.filename: 
             filepath = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
             file.save(filepath)
 
-            # YOLO Magic
+            # YOLO Logic
             results = cv_model(filepath)
             plotted = results[0].plot()
             
@@ -156,20 +188,20 @@ def customer_dashboard():
             result_path = os.path.join(app.config["UPLOAD_FOLDER"], result_filename)
             cv2.imwrite(result_path, plotted)
 
-            # HSV Magic
+            # HSV Color Logic
             hsv_status, hsv_val = analyze_hsv_freshness(filepath)
 
             conf = 0
             for r in results:
                 if len(r.boxes) > 0:
                     conf = float(r.boxes.conf.max())
+                    class_id = int(r.boxes.cls[0])
+                    label = r.names[class_id]
             
             score = int(conf * 100)
-            
-            # THE FIX: This is now safely inside the 'if file' block
             result_img = "static/uploads/" + result_filename
 
-    return render_template("customer_dashboard.html", result_img=result_img, score=score, hsv_status=hsv_status)
+    return render_template("customer_dashboard.html", result_img=result_img, score=score, hsv_status=hsv_status, label=label)
 
 # --- FARMER SECTION ---
 @app.route("/farmer_login")
@@ -200,31 +232,52 @@ def farmer_details():
 
 @app.route("/submit_farmer_verification", methods=["POST"])
 def submit_farmer_verification():
+    # 1. Capture GPS
     lat = request.form.get("latitude")
     lon = request.form.get("longitude")
     
-    # Save files to the new static folder
+    # 2. Capture Legal Details
+    aadhaar_num = request.form.get("aadhaar_number")
+    patta_num = request.form.get("patta_number")
+    land_type = request.form.get("land_type")
+    
+    print(f"✅ RECEIVED KYC: Aadhaar: {aadhaar_num}, Patta: {patta_num}, Type: {land_type}")
+    
+    # 3. Save files
     for key in ['aadhaar_file', 'patta_file', 'field_photo']:
         if key in request.files:
             f = request.files[key]
             if f.filename:
                 f.save(os.path.join(app.config["UPLOAD_FOLDER"], f.filename))
 
-    # HACKATHON BYPASS: Save GPS to session instead of Database
+    # 4. Reverse Geocoding
+    address_name = "Location Verified"
+    try:
+        geo_url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}"
+        headers = {'User-Agent': 'FarmioApp/1.0'}
+        response = requests.get(geo_url, headers=headers).json()
+        address_name = response.get('display_name', 'Location Verified')
+        address_name = ", ".join(address_name.split(",")[:3]) 
+    except Exception:
+        address_name = "Chennai, Tamil Nadu"
+
+    # 5. Save to session
     session['dummy_farmer_lat'] = lat
     session['dummy_farmer_lon'] = lon
+    session['farmer_address'] = address_name
 
     return f"""
     <html>
-        <body style="font-family: sans-serif; text-align: center; background-color: #e9ecef; padding-top: 100px;">
-            <div style="background: white; padding: 40px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                <h1 style="color: #28a745; margin-top: 0;">✅ Verification Successful!</h1>
-                <p style="font-size: 18px; color: #555;">Your Live Location is locked and verified.<br><strong>Lat: {lat} | Lon: {lon}</strong></p>
-                <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                    <strong>Success:</strong> You are now visible to nearby customers on Farmio!
+        <body style="font-family: 'Poppins', sans-serif; text-align: center; background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%); padding-top: 100px; margin: 0; min-height: 100vh;">
+            <div style="background: white; padding: 50px; border-radius: 24px; display: inline-block; box-shadow: 0 20px 50px rgba(0,0,0,0.05); max-width: 600px; width: 100%;">
+                <h1 style="color: #28a745; margin-top: 0; font-size: 32px;">✅ KYC Successful!</h1>
+                <p style="font-size: 18px; color: #4a5568;">Your documents and Live Location are locked.</p>
+                <div style="background: #f0fff4; color: #22543d; padding: 20px; border-radius: 12px; margin: 25px 0; border: 1px solid #c6f6d5; text-align: left;">
+                    <strong>📍 Registered Address:</strong><br>{address_name}<br><br>
+                    <strong>📝 Land Type:</strong> {land_type}
                 </div>
-                <a href="/customer_login" style="display: inline-block; background: #007bff; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; margin-top: 10px;">
-                    Test the Customer Dashboard 🛒
+                <a href="/customer_dashboard" style="display: inline-block; background: linear-gradient(45deg, #11998e, #38ef7d); color: white; padding: 16px 30px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 18px; margin-top: 10px; box-shadow: 0 10px 20px rgba(56, 239, 125, 0.3);">
+                    Test Customer Dashboard 🛒
                 </a>
             </div>
         </body>
@@ -237,17 +290,27 @@ def check_nearby_farmers():
     c_lat = float(data.get("lat"))
     c_lon = float(data.get("lon"))
     
-    # Check if we saved a dummy farmer in this session
     f_lat = session.get('dummy_farmer_lat')
     f_lon = session.get('dummy_farmer_lon')
+    f_addr = session.get('farmer_address', 'Nearby Farmer')
     
     nearby_count = 0
+    dist = 0
     if f_lat and f_lon:
         dist = haversine(c_lon, c_lat, float(f_lon), float(f_lat))
-        if dist <= 5.0:
+        
+        # 10.0 km radius limit
+        if dist <= 10.0:
             nearby_count = 1
             
-    return jsonify({"status": "ok", "nearby_count": nearby_count})
+    return jsonify({
+        "status": "ok", 
+        "nearby_count": nearby_count,
+        "distance": round(dist, 2) if f_lat else 0,
+        "location_name": f_addr,
+        "farmer_lat": f_lat,
+        "farmer_lon": f_lon
+    })
 
 # --- LAND OCR ---
 @app.route("/farmer_land_verify", methods=["GET", "POST"])

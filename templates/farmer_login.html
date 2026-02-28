@@ -2,25 +2,25 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Farmer Login</title>
+    <title>{{ t('Farmer Login') }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
 <div class="form-card">
     <h1 class="app-title">FARMIO</h1>
-    <p class="tagline">Farmer Login</p>
+    <p class="tagline">{{ t('Farmer Login') }}</p>
 
     <form id="farmerForm">
-        <label for="mobile">Mobile Number</label>
-        <input type="text" name="mobile" class="form-input" placeholder="Enter Mobile" required>
-        <button type="submit" class="form-btn">Send OTP</button>
+        <label for="mobile">{{ t('Mobile Number') }}</label>
+        <input type="text" name="mobile" class="form-input" placeholder="{{ t('Enter Mobile Number') }}" required>
+        <button type="submit" class="form-btn">{{ t('Send OTP') }}</button>
     </form>
 
     <div id="farmerOtpSection" style="display:none; margin-top:20px;">
-        <label for="farmerOtpInput">Enter OTP</label>
-        <input type="text" id="farmerOtpInput" class="form-input" placeholder="Enter OTP">
-        <button id="verifyFarmerOtpBtn" class="form-btn">Verify OTP</button>
+        <label for="farmerOtpInput">{{ t('Enter OTP') }}</label>
+        <input type="text" id="farmerOtpInput" class="form-input" placeholder="{{ t('Enter OTP') }}">
+        <button id="verifyFarmerOtpBtn" class="form-btn">{{ t('Verify & Login') }}</button>
     </div>
 
     <div id="farmerMessage" class="success-msg" style="text-align:center; margin-top:15px;"></div>
@@ -37,20 +37,21 @@ document.addEventListener("DOMContentLoaded", function() {
 
     farmerForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        farmerMessage.innerText = "Sending OTP...";
+        // Translated JS Message
+        farmerMessage.innerText = "{{ t('Sending OTP...') }}";
 
         const formData = new FormData(farmerForm);
         const response = await fetch("/send_farmer_otp", { method:"POST", body:formData });
         const result = await response.json();
 
         if(result.status === "ok"){
-            // 🚀 HACKATHON MAGIC: Show the fake SMS alert!
-            alert("📱 NEW MESSAGE: Your Farmio login OTP is " + result.dummy_otp);
+            // 🚀 HACKATHON MAGIC: Translated SMS Alert!
+            alert("📱 {{ t('NEW MESSAGE: Your Farmio login OTP is') }} " + result.dummy_otp);
             
             farmerOtpSection.style.display = "block";
-            farmerMessage.innerText = "OTP sent successfully!";
+            farmerMessage.innerText = "{{ t('OTP sent successfully!') }}";
         } else {
-            farmerMessage.innerText = "Failed to send OTP!";
+            farmerMessage.innerText = "{{ t('Failed to send OTP!') }}";
         }
     });
 
@@ -58,7 +59,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const otp = farmerOtpInput.value.trim();
         if(otp === ""){
-            farmerMessage.innerText = "Please enter OTP";
+            farmerMessage.innerText = "{{ t('Please enter OTP') }}";
             return;
         }
 
@@ -73,7 +74,8 @@ document.addEventListener("DOMContentLoaded", function() {
         if(result.status === "ok"){
             window.location.href = result.redirect;
         } else {
-            farmerMessage.innerText = result.message;
+            // Backend error message translation (Optional, but good practice)
+            farmerMessage.innerText = result.message; 
         }
     });
 
